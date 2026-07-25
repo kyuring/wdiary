@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wdiary
+      POSTGRES_PASSWORD: wdiary
+      POSTGRES_DB: wdiary
+    ports:
+      - "5432:5432"
+    volumes:
+      - wdiary_pgdata:/var/lib/postgresql/data
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  wdiary_pgdata:

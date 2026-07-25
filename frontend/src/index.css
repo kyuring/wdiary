@@ -1,0 +1,706 @@
+:root {
+  --text: #4a4550;
+  --text-h: #241f29;
+  --text-muted: #8a8391;
+  --bg: #fdfbfa;
+  --bg-alt: #ffffff;
+  --border: #e8e2e6;
+  --accent: #b4577a;
+  --accent-strong: #93395a;
+  --accent-bg: rgba(180, 87, 122, 0.08);
+  --success: #3f8f5f;
+  --success-bg: rgba(63, 143, 95, 0.1);
+  --warn: #b8590f;
+  --warn-bg: rgba(184, 89, 15, 0.12);
+  --danger: #c0392b;
+  --danger-bg: rgba(192, 57, 43, 0.1);
+  --shadow: rgba(36, 31, 41, 0.06) 0 2px 8px;
+
+  --sans: system-ui, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, sans-serif;
+
+  font: 16px/1.55 var(--sans);
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #cfc9d3;
+    --text-h: #f4f1f6;
+    --text-muted: #948d9c;
+    --bg: #17141a;
+    --bg-alt: #201c25;
+    --border: #322c38;
+    --accent: #e08cae;
+    --accent-strong: #f0a8c4;
+    --accent-bg: rgba(224, 140, 174, 0.12);
+    --success: #6cc98d;
+    --success-bg: rgba(108, 201, 141, 0.14);
+    --warn: #e7a052;
+    --warn-bg: rgba(231, 160, 82, 0.14);
+    --danger: #e37569;
+    --danger-bg: rgba(227, 117, 105, 0.14);
+    --shadow: rgba(0, 0, 0, 0.35) 0 2px 10px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+h1, h2, h3 {
+  color: var(--text-h);
+  font-weight: 600;
+  margin: 0 0 0.5em;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* .field로 감싸지 않고 바로 쓰는 input/select(체크리스트 목표일·담당자 등)도
+   동일한 디자인을 받도록 기본값을 전역으로 지정 */
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-alt);
+  color: var(--text-h);
+  color-scheme: light dark;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* --- 레이아웃 --- */
+
+.app-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.hamburger-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 6px 10px;
+  color: var(--text-h);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+
+.topbar-brand {
+  flex: 1;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.nickname {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* --- 사이드 메뉴 (모바일: 햄버거로 여닫는 오프캔버스 드로어) --- */
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px;
+  background: var(--bg-alt);
+  border-right: 1px solid var(--border);
+  z-index: 30;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 16px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.side-link {
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.side-link.active {
+  background: var(--accent-bg);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.side-link-disabled {
+  color: var(--text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- 데스크톱(웹): 사이드바를 항상 펼쳐서 고정 표시, 햄버거는 숨김 ---
+   position:fixed로 뷰포트에 완전히 고정 — sticky는 마우스 드래그(텍스트 선택 등)로 스크롤이 발생하면
+   같이 딸려 움직이는 것처럼 보일 수 있어서, 절대 안 움직이는 fixed로 바꿈. 그만큼 main-content에
+   sidebar 너비(240px)만큼 여백을 줘서 겹치지 않게 함(fixed는 문서 흐름에서 빠지므로). */
+@media (min-width: 768px) {
+  .app-shell {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: auto;
+    transform: none;
+  }
+
+  .main-content {
+    margin-left: 240px;
+  }
+
+  .sidebar-overlay {
+    display: none;
+  }
+
+  .sidebar-close-btn {
+    display: none;
+  }
+
+  .hamburger-btn {
+    display: none;
+  }
+
+  .topbar-brand {
+    display: none;
+  }
+}
+
+.page h1 {
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.page {
+  flex: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.full-page-center {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* --- 버튼/폼 --- */
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-alt);
+  color: var(--accent-strong);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.field label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.field input,
+.field select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-alt);
+  color: var(--text-h);
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  flex: 1;
+  padding-right: 56px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  padding: 6px 8px;
+}
+
+.error-banner {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+/* --- 모달 --- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100svh - 40px);
+  overflow-y: auto;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* --- 인증/커플 설정 카드 --- */
+
+.auth-page {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+}
+
+.auth-card h1 {
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.auth-switch a {
+  color: var(--accent-strong);
+}
+
+.setup-choice {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 560px) {
+  .setup-choice {
+    grid-template-columns: 1fr;
+  }
+}
+
+.choice-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: left;
+  background: var(--bg-alt);
+  cursor: pointer;
+}
+
+.choice-card:hover {
+  border-color: var(--accent);
+}
+
+.invite-code-box {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--accent-strong);
+  background: var(--accent-bg);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+/* --- 카드/대시보드 --- */
+
+.card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card-link {
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.card-link:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(36, 31, 41, 0.1);
+  transform: translateY(-1px);
+}
+
+.community-row:hover {
+  background: var(--bg);
+}
+
+.dashboard-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+/* 예산 세부항목: 데스크톱은 한눈에 훑어보기 좋은 표, 모바일은 표가 옆으로 잘리니 카드로 —
+   같은 768px 기준으로 사이드바 전환과 통일 */
+.line-items-table-wrap {
+  display: none;
+}
+.line-items-cards {
+  display: block;
+}
+@media (min-width: 768px) {
+  .line-items-table-wrap {
+    display: block;
+  }
+  .line-items-cards {
+    display: none;
+  }
+}
+
+/* 준비 타임라인 카드 그리드 — 폭에 상관없이 카드 크기가 들쭉날쭉해지지 않도록 auto-fill 대신
+   고정 열 개수로 줄바꿈함(좁을 땐 2열, 넓을 땐 4열) */
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .roadmap-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dashboard-grid > .card {
+  flex: 1 1 300px;
+  margin-bottom: 0;
+}
+
+.todo-category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.todo-category {
+  flex: 1 1 260px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.dday-number {
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.badge-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.badge-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.badge-neutral {
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.nav-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nav-card {
+  flex: 1 1 120px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  background: var(--bg-alt);
+}
+
+/* --- 결혼 준비 여정 타임라인 (대시보드 상단 장식용) --- */
+
+.journey-timeline {
+  padding: 34px 26px 40px;
+}
+
+.journey-track {
+  position: relative;
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  margin: 0 17px;
+}
+
+.journey-track-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.journey-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-alt);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.journey-marker.passed {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.journey-marker.final {
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+}
+
+.journey-marker.final.arrived {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-bg);
+}
+
+.journey-current {
+  position: absolute;
+  top: -6px;
+  transform: translate(-50%, -100%);
+  font-size: 20px;
+  transition: left 0.4s ease;
+}
+
+.progress-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.form-row .field {
+  flex: 1;
+  min-width: 160px;
+}
+
+.checklist-item-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.checklist-item-controls select,
+.checklist-item-controls input {
+  min-width: 0;
+}

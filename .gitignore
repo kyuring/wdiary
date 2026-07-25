@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+
+# 개인 참고 문서(코드 아님)
+/data/
+결혼준비앱_기획서.md
