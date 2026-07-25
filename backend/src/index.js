@@ -21,8 +21,12 @@ import adminRouter from './routes/admin.js';
 import announcementsRouter from './routes/announcements.js';
 import inquiriesRouter from './routes/inquiries.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import { globalLimiter } from './middleware/rateLimit.js';
 
 const app = express();
+
+// 프록시(nginx 등) 뒤에서 배포될 때 클라이언트 실제 IP를 봐야 rate limit이 개별 사용자 기준으로 동작함
+app.set('trust proxy', 1);
 
 app.use(
   cors({
@@ -32,6 +36,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use('/api', globalLimiter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);

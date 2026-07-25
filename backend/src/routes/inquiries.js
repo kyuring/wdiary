@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { postLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 });
 
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, postLimiter, async (req, res, next) => {
   try {
     const { title, body, category } = req.body;
     if (!title || !body) return res.status(400).json({ error: '제목과 내용을 입력해주세요.' });

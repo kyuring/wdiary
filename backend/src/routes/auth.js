@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { query } from '../db.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken, refreshCookieOptions } from '../utils/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.get('/check-nickname', async (req, res, next) => {
   }
 });
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLimiter, async (req, res, next) => {
   try {
     const username = (req.body.username || '').toLowerCase();
     const { password, nickname } = req.body;
@@ -83,7 +84,7 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLimiter, async (req, res, next) => {
   try {
     const username = (req.body.username || '').toLowerCase();
     const { password } = req.body;

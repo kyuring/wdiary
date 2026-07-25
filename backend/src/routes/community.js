@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { postLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -45,7 +46,7 @@ router.get('/posts', requireAuth, async (req, res, next) => {
   }
 });
 
-router.post('/posts', requireAuth, async (req, res, next) => {
+router.post('/posts', requireAuth, postLimiter, async (req, res, next) => {
   try {
     const { category, region, place_name, rating, title, body } = req.body;
     if (!CATEGORIES.includes(category)) {
@@ -93,7 +94,7 @@ router.delete('/posts/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-router.post('/posts/:id/comments', requireAuth, async (req, res, next) => {
+router.post('/posts/:id/comments', requireAuth, postLimiter, async (req, res, next) => {
   try {
     const { body } = req.body;
     if (!body) return res.status(400).json({ error: '댓글 내용을 입력해주세요.' });
@@ -123,7 +124,7 @@ router.delete('/comments/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-router.post('/reports', requireAuth, async (req, res, next) => {
+router.post('/reports', requireAuth, postLimiter, async (req, res, next) => {
   try {
     const { target_type, target_id, reason } = req.body;
     if (!['post', 'comment'].includes(target_type)) {
