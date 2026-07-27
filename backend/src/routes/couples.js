@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../db.js';
+import { pool, query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { generateInviteCode } from '../utils/inviteCode.js';
 import { findCoupleByUserId } from '../utils/coupleAccess.js';
@@ -107,6 +107,67 @@ router.post('/join', requireAuth, async (req, res, next) => {
     res.json({ couple: updated.rows[0] });
   } catch (err) {
     next(err);
+  }
+});
+
+// '커플 만들기'로 혼자 만들어뒀다가(배우자 미가입) 사실 배우자가 먼저 만든 코드가 있어서
+// 그쪽으로 갈아타고 싶을 때. 기존에 혼자 만든 커플은 삭제되고(체크리스트 등도 cascade로 함께 삭제) 새 커플에 참여함.
+router.post('/switch', requireAuth, async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    const { invite_code } = req.body;
+    if (!invite_code) {
+      return res.status(400).json({ error: '초대 코드를 입력해주세요.' });
+    }
+
+    await client.query('BEGIN');
+
+    const mine = await client.query(
+      'SELECT * FROM couples WHERE groom_user_id = $1 OR bride_user_id = $1',
+      [req.user.id]
+    );
+    const myCouple = mine.rows[0];
+    if (!myCouple) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: '커플에 속해있지 않습니다.' });
+    }
+    if (myCouple.groom_user_id && myCouple.bride_user_id) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: '이미 배우자가 참여한 커플은 변경할 수 없습니다.' });
+    }
+
+    const target = await client.query('SELECT * FROM couples WHERE invite_code = $1', [invite_code.toUpperCase()]);
+    const targetCouple = target.rows[0];
+    if (!targetCouple) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: '유효하지 않은 초대 코드입니다.' });
+    }
+    if (targetCouple.id === myCouple.id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: '지금 사용 중인 커플과 같은 코드예요.' });
+    }
+
+    let column;
+    if (!targetCouple.groom_user_id) column = 'groom_user_id';
+    else if (!targetCouple.bride_user_id) column = 'bride_user_id';
+    else {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: '이미 양쪽 모두 참여가 완료된 커플입니다.' });
+    }
+
+    await client.query('DELETE FROM couples WHERE id = $1', [myCouple.id]);
+    const updated = await client.query(
+      `UPDATE couples SET ${column} = $1, invite_code = NULL WHERE id = $2 RETURNING *`,
+      [req.user.id, targetCouple.id]
+    );
+
+    await client.query('COMMIT');
+    res.json({ couple: updated.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
   }
 });
 
