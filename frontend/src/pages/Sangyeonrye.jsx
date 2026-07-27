@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
-import { useGuideContent } from '../context/GuideContentContext.jsx';
+import { useGuideContent, useGuideContentReady } from '../context/GuideContentContext.jsx';
 import PlaceSearch from '../components/PlaceSearch.jsx';
 import { allRegions, recommendMidpoint } from '../lib/sangyeonrye.js';
 
@@ -28,6 +28,7 @@ export default function Sangyeonrye() {
   const preMeetingChecklist = useGuideContent('sangyeonrye.pre_meeting_checklist');
   const dayOfChecklist = useGuideContent('sangyeonrye.day_of_checklist');
   const cuisineOptions = useGuideContent('sangyeonrye.cuisine_options');
+  const guideReady = useGuideContentReady();
   const [error, setError] = useState('');
   const [groomRegion, setGroomRegion] = useState('');
   const [brideRegion, setBrideRegion] = useState('');
@@ -60,6 +61,10 @@ export default function Sangyeonrye() {
     patch({ [field]: { [item]: checked } });
   };
 
+  if (error && !data) return <div className="full-page-center">{error}</div>;
+  if (guideReady && !regionGroups) {
+    return <div className="full-page-center">설정 정보를 불러오지 못했어요. 새로고침해주세요.</div>;
+  }
   if (!data || !regionGroups) return <div className="full-page-center">불러오는 중...</div>;
 
   const regions = allRegions(regionGroups);

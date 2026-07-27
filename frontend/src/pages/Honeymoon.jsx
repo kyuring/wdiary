@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
-import { useGuideContent } from '../context/GuideContentContext.jsx';
+import { useGuideContent, useGuideContentReady } from '../context/GuideContentContext.jsx';
 import MoneyInput from '../components/MoneyInput.jsx';
 import DestinationCalculator from './honeymoon/DestinationCalculator.jsx';
 import FlightsSection from './honeymoon/FlightsSection.jsx';
@@ -10,6 +10,7 @@ import ChecklistSection from './honeymoon/ChecklistSection.jsx';
 export default function Honeymoon() {
   const [data, setData] = useState(null);
   const destinationGuide = useGuideContent('honeymoon.destinations');
+  const guideReady = useGuideContentReady();
   const [flights, setFlights] = useState(null);
   const [stays, setStays] = useState(null);
   const [error, setError] = useState('');
@@ -80,6 +81,10 @@ export default function Honeymoon() {
     }
   };
 
+  if (error && !data) return <div className="full-page-center">{error}</div>;
+  if (guideReady && !destinationGuide) {
+    return <div className="full-page-center">설정 정보를 불러오지 못했어요. 새로고침해주세요.</div>;
+  }
   if (!data || !flights || !stays || !destinationGuide) return <div className="full-page-center">불러오는 중...</div>;
 
   return (

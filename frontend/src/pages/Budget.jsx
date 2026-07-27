@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
-import { useGuideContent } from '../context/GuideContentContext.jsx';
+import { useGuideContent, useGuideContentReady } from '../context/GuideContentContext.jsx';
 import { useCouple } from '../context/CoupleContext.jsx';
 import MoneyInput from '../components/MoneyInput.jsx';
 import CategorySection from './budget/CategorySection.jsx';
@@ -19,6 +19,7 @@ export default function Budget() {
   const [preset, setPreset] = useState('average');
   const categories = useGuideContent('budget.categories');
   const presets = useGuideContent('budget.presets');
+  const guideReady = useGuideContentReady();
 
   const load = () => api.get('/budget').then((res) => {
     setData(res);
@@ -87,6 +88,10 @@ export default function Budget() {
     await load();
   };
 
+  if (error && !data) return <div className="full-page-center">{error}</div>;
+  if (guideReady && !categories) {
+    return <div className="full-page-center">설정 정보를 불러오지 못했어요. 새로고침해주세요.</div>;
+  }
   if (!data || !categories) return <div className="full-page-center">불러오는 중...</div>;
 
   const { totals, payerMethodBreakdown } = data;

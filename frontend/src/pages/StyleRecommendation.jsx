@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
-import { useGuideContent } from '../context/GuideContentContext.jsx';
+import { useGuideContent, useGuideContentReady } from '../context/GuideContentContext.jsx';
 
 function SongPicker({ label, options, value, onSave }) {
   const isCustomValue = !!value && !options.includes(value);
@@ -40,6 +40,7 @@ function SongPicker({ label, options, value, onSave }) {
 export default function StyleRecommendation() {
   const [data, setData] = useState(null);
   const styles = useGuideContent('style.recommendations');
+  const guideReady = useGuideContentReady();
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -56,6 +57,10 @@ export default function StyleRecommendation() {
     }
   };
 
+  if (error && !data) return <div className="full-page-center">{error}</div>;
+  if (guideReady && !styles) {
+    return <div className="full-page-center">설정 정보를 불러오지 못했어요. 새로고침해주세요.</div>;
+  }
   if (!data || !styles) return <div className="full-page-center">불러오는 중...</div>;
 
   const selectedStyle = styles.find((s) => s.key === data.selected);

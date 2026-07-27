@@ -49,6 +49,7 @@ export default function VenueGuide() {
     setVenues((prev) => prev.filter((v) => v.id !== venue.id));
   };
 
+  if (error && !venues) return <div className="full-page-center">{error}</div>;
   if (!venues) return <div className="full-page-center">불러오는 중...</div>;
 
   return (

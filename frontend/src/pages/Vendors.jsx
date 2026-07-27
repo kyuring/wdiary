@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
-import { useGuideContent } from '../context/GuideContentContext.jsx';
+import { useGuideContent, useGuideContentReady } from '../context/GuideContentContext.jsx';
 import MoneyInput from '../components/MoneyInput.jsx';
 import PlaceSearch from '../components/PlaceSearch.jsx';
 
@@ -95,6 +95,7 @@ export default function Vendors() {
   const contractStatusOptions = useGuideContent('vendor.contract_status_options');
   const checklists = useGuideContent('vendor.checklist');
   const commonChecklist = useGuideContent('vendor.common_checklist');
+  const guideReady = useGuideContentReady();
   const [error, setError] = useState('');
   const [newVendor, setNewVendor] = useState({ category: '', name: '' });
   const [addingVendor, setAddingVendor] = useState(false);
@@ -136,6 +137,10 @@ export default function Vendors() {
     setVendors((prev) => prev.filter((v) => v.id !== vendor.id));
   };
 
+  if (error && !vendors) return <div className="full-page-center">{error}</div>;
+  if (guideReady && !categories) {
+    return <div className="full-page-center">설정 정보를 불러오지 못했어요. 새로고침해주세요.</div>;
+  }
   if (!vendors || !categories) return <div className="full-page-center">불러오는 중...</div>;
 
   const grouped = categories.map((cat) => [cat, vendors.filter((v) => v.category === cat)]).filter(([, list]) => list.length > 0);
