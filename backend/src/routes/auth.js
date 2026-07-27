@@ -95,7 +95,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
     const result = await query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+      return res.status(401).json({ error: '아이디와 비밀번호를 확인해주세요.' });
     }
     if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
       return res.status(403).json({ error: `이용이 정지된 계정입니다. (${new Date(user.suspended_until).toISOString().slice(0, 10)}까지)` });
