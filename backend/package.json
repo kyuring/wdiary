@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node-pg-migrate up",
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "prestart": "node-pg-migrate up",
+    "start": "node src/index.js",
+    "migrate": "node-pg-migrate"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -16,6 +19,7 @@
     "express-rate-limit": "^8.6.0",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.0.7",
+    "node-pg-migrate": "^9.0.0",
     "pg": "^8.11.5"
   }
 }

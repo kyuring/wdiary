@@ -10,7 +10,6 @@ services:
       - "5432:5432"
     volumes:
       - wdiary_pgdata:/var/lib/postgresql/data
-      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   wdiary_pgdata:
