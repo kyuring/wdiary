@@ -3,24 +3,86 @@ import MoneyInput from '../../components/MoneyInput.jsx';
 import { StarRatingInput, StarRatingDisplay } from '../../components/StarRating.jsx';
 import { won } from './helpers.js';
 
-function CheckField({ label, value, onSave }) {
+function CheckField({ label, value, onSave, onRemove, removeTitle }) {
   const [text, setText] = useState(value || '');
 
   useEffect(() => setText(value || ''), [value]);
 
   return (
-    <div className="field" style={{ marginBottom: 10 }}>
-      <label>{label}</label>
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => text !== (value || '') && onSave(label, text)}
-      />
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
+      <div className="field" style={{ marginBottom: 10, flex: 1 }}>
+        <label>{label}</label>
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={() => text !== (value || '') && onSave(label, text)}
+        />
+      </div>
+      {onRemove && (
+        <button className="btn-ghost" style={{ marginBottom: 10, fontSize: '0.75rem', padding: '0 6px' }} onClick={onRemove} title={removeTitle}>
+          ✕
+        </button>
+      )}
     </div>
   );
 }
 
-export default function VenueCard({ venue, checklist, onUpdate, onDelete, onOpenRefQuote }) {
+function AddChecklistItem({ onAdd }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!text.trim() || adding) return;
+    setAdding(true);
+    try {
+      await onAdd(text.trim());
+      setText('');
+      setOpen(false);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button type="button" className="btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setOpen(true)}>
+        + 항목 추가
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+      <input
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="확인할 항목 입력"
+        style={{ flex: 1 }}
+      />
+      <button className="btn-secondary" type="submit" disabled={adding} style={{ fontSize: '0.8rem' }}>
+        {adding ? '추가 중...' : '추가'}
+      </button>
+      <button type="button" className="btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setOpen(false)}>취소</button>
+    </form>
+  );
+}
+
+export default function VenueCard({
+  venue,
+  checklist,
+  hiddenChecklistItems,
+  customChecklistItems,
+  onUpdate,
+  onDelete,
+  onOpenRefQuote,
+  onHideChecklistItem,
+  onRestoreChecklistItem,
+  onAddCustomChecklistItem,
+  onDeleteCustomChecklistItem,
+}) {
   const [name, setName] = useState(venue.name);
   const [notes, setNotes] = useState(venue.notes || '');
   const [quotedPrice, setQuotedPrice] = useState(venue.quoted_price ?? '');
@@ -131,16 +193,53 @@ export default function VenueCard({ venue, checklist, onUpdate, onDelete, onOpen
         </p>
       )}
 
-      {Object.entries(checklist || {}).map(([category, items]) => (
-        <details key={category} style={{ marginTop: 12 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>{category}</summary>
-          <div style={{ marginTop: 10 }}>
-            {items.map((item) => (
-              <CheckField key={item} label={item} value={venue.checks?.[item]} onSave={saveCheck} />
-            ))}
-          </div>
-        </details>
-      ))}
+      {Object.entries(checklist || {}).map(([category, items]) => {
+        const customItems = customChecklistItems?.[category] || [];
+        const visibleItems = items.filter((item) => !hiddenChecklistItems?.has(item));
+        const hiddenItems = items.filter((item) => hiddenChecklistItems?.has(item));
+
+        return (
+          <details key={category} style={{ marginTop: 12 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>{category}</summary>
+            <div style={{ marginTop: 10 }}>
+              {customItems.map((item) => (
+                <CheckField
+                  key={`custom-${item}`}
+                  label={item}
+                  value={venue.checks?.[item]}
+                  onSave={saveCheck}
+                  onRemove={() => onDeleteCustomChecklistItem(category, item)}
+                  removeTitle="이 항목 삭제"
+                />
+              ))}
+              {visibleItems.map((item) => (
+                <CheckField
+                  key={item}
+                  label={item}
+                  value={venue.checks?.[item]}
+                  onSave={saveCheck}
+                  onRemove={() => onHideChecklistItem(item)}
+                  removeTitle="이 항목 숨기기(모든 후보에서 숨겨져요)"
+                />
+              ))}
+              {hiddenItems.length > 0 && (
+                <details style={{ marginBottom: 10 }}>
+                  <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    숨긴 항목 {hiddenItems.length}개
+                  </summary>
+                  {hiddenItems.map((item) => (
+                    <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      <span style={{ textDecoration: 'line-through' }}>{item}</span>
+                      <button className="btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => onRestoreChecklistItem(item)}>복원</button>
+                    </div>
+                  ))}
+                </details>
+              )}
+              <AddChecklistItem onAdd={(text) => onAddCustomChecklistItem(category, text)} />
+            </div>
+          </details>
+        );
+      })}
 
       <button className="btn-ghost" style={{ marginTop: 12 }} onClick={() => onDelete(venue)}>
         후보 삭제

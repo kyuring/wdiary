@@ -191,8 +191,15 @@ const PATCHABLE_FIELDS = [
   'venue_booked_date',
   'hidden_roadmap_tasks',
   'custom_roadmap_tasks',
+  'hidden_venue_checklist_items',
+  'custom_venue_checklist_items',
 ];
-const JSONB_FIELDS = ['hidden_roadmap_tasks', 'custom_roadmap_tasks'];
+const JSONB_FIELDS = [
+  'hidden_roadmap_tasks',
+  'custom_roadmap_tasks',
+  'hidden_venue_checklist_items',
+  'custom_venue_checklist_items',
+];
 
 router.patch('/me', requireAuth, async (req, res, next) => {
   try {

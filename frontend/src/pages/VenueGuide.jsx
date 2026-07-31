@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useGuideContent } from '../context/GuideContentContext.jsx';
+import { useCouple } from '../context/CoupleContext.jsx';
 import VenueCard from './venueguide/VenueCard.jsx';
 import ReferenceQuoteModal from './venueguide/ReferenceQuoteModal.jsx';
 import VenueLeadTimeSection from './venueguide/VenueLeadTimeSection.jsx';
@@ -11,6 +12,7 @@ export default function VenueGuide() {
   const [venues, setVenues] = useState(null);
   const checklist = useGuideContent('venue.checklist');
   const venueLeadTimeMonths = useGuideContent('roadmap.venue_lead_time');
+  const { couple, updateCouple } = useCouple();
   const [error, setError] = useState('');
   const [newName, setNewName] = useState('');
   const [addingVenue, setAddingVenue] = useState(false);
@@ -51,6 +53,26 @@ export default function VenueGuide() {
 
   if (error && !venues) return <div className="full-page-center">{error}</div>;
   if (!venues) return <div className="full-page-center">불러오는 중...</div>;
+
+  // 체크리스트 항목 숨김/커스텀 추가는 이 후보 하나가 아니라 couple 전체(모든 후보 카드)에 공유되는 템플릿 설정 —
+  // roadmap.hidden_roadmap_tasks/custom_roadmap_tasks와 동일한 패턴
+  const hiddenChecklistItems = new Set(couple.hidden_venue_checklist_items || []);
+  const customChecklistItems = couple.custom_venue_checklist_items || {};
+
+  const hideChecklistItem = (item) =>
+    updateCouple({ hidden_venue_checklist_items: [...hiddenChecklistItems, item] });
+  const restoreChecklistItem = (item) =>
+    updateCouple({ hidden_venue_checklist_items: [...hiddenChecklistItems].filter((t) => t !== item) });
+  const addCustomChecklistItem = (category, text) => {
+    const current = customChecklistItems[category] || [];
+    return updateCouple({ custom_venue_checklist_items: { ...customChecklistItems, [category]: [...current, text] } });
+  };
+  const deleteCustomChecklistItem = (category, text) => {
+    const current = customChecklistItems[category] || [];
+    return updateCouple({
+      custom_venue_checklist_items: { ...customChecklistItems, [category]: current.filter((t) => t !== text) },
+    });
+  };
 
   return (
     <div>
@@ -137,9 +159,15 @@ export default function VenueGuide() {
           key={v.id}
           venue={v}
           checklist={checklist}
+          hiddenChecklistItems={hiddenChecklistItems}
+          customChecklistItems={customChecklistItems}
           onUpdate={updateVenue}
           onDelete={deleteVenue}
           onOpenRefQuote={() => setRefQuoteVenue(v)}
+          onHideChecklistItem={hideChecklistItem}
+          onRestoreChecklistItem={restoreChecklistItem}
+          onAddCustomChecklistItem={addCustomChecklistItem}
+          onDeleteCustomChecklistItem={deleteCustomChecklistItem}
         />
       ))}
     </div>
