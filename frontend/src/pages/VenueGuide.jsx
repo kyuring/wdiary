@@ -3,6 +3,7 @@ import { api } from '../api/client.js';
 import { useGuideContent } from '../context/GuideContentContext.jsx';
 import { useCouple } from '../context/CoupleContext.jsx';
 import VenueCard from './venueguide/VenueCard.jsx';
+import VenueCompareCard from './venueguide/VenueCompareCard.jsx';
 import ReferenceQuoteModal from './venueguide/ReferenceQuoteModal.jsx';
 import VenueLeadTimeSection from './venueguide/VenueLeadTimeSection.jsx';
 import { StarRatingDisplay } from '../components/StarRating.jsx';
@@ -107,7 +108,7 @@ export default function VenueGuide() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: -8, marginBottom: 10 }}>
             후보 이름은 가로로 스크롤해도 계속 보여요.
           </p>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="line-items-table-wrap" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: 'var(--text-muted)' }}>
@@ -119,6 +120,8 @@ export default function VenueGuide() {
                   <th style={{ padding: 8 }}>초과 인원 추가비용</th>
                   <th style={{ padding: 8 }}>필수 포함 금액</th>
                   <th style={{ padding: 8 }}>총금액</th>
+                  <th style={{ padding: 8 }}>예식시간</th>
+                  <th style={{ padding: 8 }}>식사 마감</th>
                   <th style={{ padding: 8 }}>근처역</th>
                   <th style={{ padding: 8 }}>참고 견적</th>
                 </tr>
@@ -137,6 +140,8 @@ export default function VenueGuide() {
                     <td style={{ padding: 8 }}>{won(v.extra_person_fee)}</td>
                     <td style={{ padding: 8 }}>{won(v.mandatory_fee)}</td>
                     <td style={{ padding: 8, fontWeight: 600, color: 'var(--accent-strong)' }}>{won(v.total_price)}</td>
+                    <td style={{ padding: 8 }}>{v.ceremony_time?.slice(0, 5) || '-'}</td>
+                    <td style={{ padding: 8 }}>{v.meal_service_until?.slice(0, 5) || '-'}</td>
                     <td style={{ padding: 8 }}>{v.nearby_station || '-'}</td>
                     <td style={{ padding: 8 }}>
                       <button className="btn-ghost" onClick={() => setRefQuoteVenue(v)}>
@@ -147,6 +152,11 @@ export default function VenueGuide() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="line-items-cards">
+            {venues.map((v) => (
+              <VenueCompareCard key={v.id} venue={v} onOpenRefQuote={() => setRefQuoteVenue(v)} />
+            ))}
           </div>
         </div>
       )}

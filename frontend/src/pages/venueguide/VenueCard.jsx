@@ -92,6 +92,8 @@ export default function VenueCard({
   const [extraFee, setExtraFee] = useState(venue.extra_person_fee ?? '');
   const [mandatoryFee, setMandatoryFee] = useState(venue.mandatory_fee ?? '');
   const [station, setStation] = useState(venue.nearby_station || '');
+  const [ceremonyTime, setCeremonyTime] = useState(venue.ceremony_time?.slice(0, 5) || '');
+  const [mealUntil, setMealUntil] = useState(venue.meal_service_until?.slice(0, 5) || '');
 
   useEffect(() => setName(venue.name), [venue.name]);
   useEffect(() => setNotes(venue.notes || ''), [venue.notes]);
@@ -102,6 +104,8 @@ export default function VenueCard({
   useEffect(() => setExtraFee(venue.extra_person_fee ?? ''), [venue.extra_person_fee]);
   useEffect(() => setMandatoryFee(venue.mandatory_fee ?? ''), [venue.mandatory_fee]);
   useEffect(() => setStation(venue.nearby_station || ''), [venue.nearby_station]);
+  useEffect(() => setCeremonyTime(venue.ceremony_time?.slice(0, 5) || ''), [venue.ceremony_time]);
+  useEffect(() => setMealUntil(venue.meal_service_until?.slice(0, 5) || ''), [venue.meal_service_until]);
 
   const saveCheck = (key, val) => onUpdate(venue, { checks: { [key]: val } });
   const commitNumber = (field, next, current) =>
@@ -192,6 +196,29 @@ export default function VenueCard({
           총금액 = 대관료 + 식대 × 보증인원 + 필수 포함 금액 = <strong style={{ color: 'var(--accent-strong)' }}>{won(venue.total_price)}</strong> (자동 계산됨)
         </p>
       )}
+
+      <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: '0.95rem' }}>시간 정보</h3>
+      <div className="form-row">
+        <div className="field">
+          <label>예식 시작 시간</label>
+          <input
+            type="time" value={ceremonyTime}
+            onChange={(e) => setCeremonyTime(e.target.value)}
+            onBlur={() => ceremonyTime !== (venue.ceremony_time?.slice(0, 5) || '') && onUpdate(venue, { ceremony_time: ceremonyTime || null })}
+          />
+        </div>
+        <div className="field">
+          <label>식사 가능 시간(까지)</label>
+          <input
+            type="time" value={mealUntil}
+            onChange={(e) => setMealUntil(e.target.value)}
+            onBlur={() => mealUntil !== (venue.meal_service_until?.slice(0, 5) || '') && onUpdate(venue, { meal_service_until: mealUntil || null })}
+          />
+        </div>
+      </div>
+      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
+        이 후보로 예약 확정하면 예식 시작 시간이 예식 당일 진행 시간 계산의 기준 시각으로 자동 반영돼요.
+      </p>
 
       {Object.entries(checklist || {}).map(([category, items]) => {
         const customItems = customChecklistItems?.[category] || [];

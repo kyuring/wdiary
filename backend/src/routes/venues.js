@@ -53,6 +53,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     const {
       name, notes, checks, quoted_price, is_booked, rating,
       rental_fee, meal_price, guaranteed_headcount, extra_person_fee, mandatory_fee, nearby_station,
+      ceremony_time, meal_service_until,
     } = req.body;
     const fields = [];
     const values = [];
@@ -68,6 +69,8 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (extra_person_fee !== undefined) { fields.push('extra_person_fee'); values.push(extra_person_fee); }
     if (mandatory_fee !== undefined) { fields.push('mandatory_fee'); values.push(mandatory_fee); }
     if (nearby_station !== undefined) { fields.push('nearby_station'); values.push(nearby_station); }
+    if (ceremony_time !== undefined) { fields.push('ceremony_time'); values.push(ceremony_time); }
+    if (meal_service_until !== undefined) { fields.push('meal_service_until'); values.push(meal_service_until); }
     if (checks !== undefined) {
       // checks는 { "항목명": "답변" } 형태의 부분 업데이트 — 기존 값과 병합
       fields.push('checks');
@@ -98,6 +101,13 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       [...values, req.params.id, couple.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: '후보를 찾을 수 없습니다.' });
+
+    // 이 후보를 예약 확정하는 순간, 후보의 예식 시간을 커플의 확정 예식 시간으로 반영
+    // (본식 당일 큐시트 등에서 쓰는 시간 기준을 후보 비교 단계에서부터 이어받기 위함)
+    if (is_booked === true && result.rows[0].ceremony_time) {
+      await query('UPDATE couples SET wedding_time = $1 WHERE id = $2', [result.rows[0].ceremony_time, couple.id]);
+    }
+
     res.json({ venue: withTotal(result.rows[0]) });
   } catch (err) {
     next(err);
