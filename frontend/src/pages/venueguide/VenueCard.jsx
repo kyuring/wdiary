@@ -94,6 +94,7 @@ export default function VenueCard({
   const [station, setStation] = useState(venue.nearby_station || '');
   const [ceremonyTime, setCeremonyTime] = useState(venue.ceremony_time?.slice(0, 5) || '');
   const [mealUntil, setMealUntil] = useState(venue.meal_service_until?.slice(0, 5) || '');
+  const [scheduledDate, setScheduledDate] = useState(venue.scheduled_date || '');
 
   useEffect(() => setName(venue.name), [venue.name]);
   useEffect(() => setNotes(venue.notes || ''), [venue.notes]);
@@ -106,6 +107,7 @@ export default function VenueCard({
   useEffect(() => setStation(venue.nearby_station || ''), [venue.nearby_station]);
   useEffect(() => setCeremonyTime(venue.ceremony_time?.slice(0, 5) || ''), [venue.ceremony_time]);
   useEffect(() => setMealUntil(venue.meal_service_until?.slice(0, 5) || ''), [venue.meal_service_until]);
+  useEffect(() => setScheduledDate(venue.scheduled_date || ''), [venue.scheduled_date]);
 
   const saveCheck = (key, val) => onUpdate(venue, { checks: { [key]: val } });
   const commitNumber = (field, next, current) =>
@@ -200,6 +202,14 @@ export default function VenueCard({
       <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: '0.95rem' }}>시간 정보</h3>
       <div className="form-row">
         <div className="field">
+          <label>예정일(희망 예식 날짜)</label>
+          <input
+            type="date" value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            onBlur={() => scheduledDate !== (venue.scheduled_date || '') && onUpdate(venue, { scheduled_date: scheduledDate || null })}
+          />
+        </div>
+        <div className="field">
           <label>예식 시작 시간</label>
           <input
             type="time" value={ceremonyTime}
@@ -217,7 +227,7 @@ export default function VenueCard({
         </div>
       </div>
       <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
-        이 후보로 예약 확정하면 예식 시작 시간이 예식 당일 진행 시간 계산의 기준 시각으로 자동 반영돼요.
+        이 후보로 예약 확정하면 여기 입력한 예정일·예식 시작 시간이 결혼식 날짜·시간으로 자동 반영돼요.
       </p>
 
       {Object.entries(checklist || {}).map(([category, items]) => {

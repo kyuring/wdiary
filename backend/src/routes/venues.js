@@ -53,7 +53,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     const {
       name, notes, checks, quoted_price, is_booked, rating,
       rental_fee, meal_price, guaranteed_headcount, extra_person_fee, mandatory_fee, nearby_station,
-      ceremony_time, meal_service_until,
+      ceremony_time, meal_service_until, scheduled_date,
     } = req.body;
     const fields = [];
     const values = [];
@@ -71,6 +71,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (nearby_station !== undefined) { fields.push('nearby_station'); values.push(nearby_station); }
     if (ceremony_time !== undefined) { fields.push('ceremony_time'); values.push(ceremony_time); }
     if (meal_service_until !== undefined) { fields.push('meal_service_until'); values.push(meal_service_until); }
+    if (scheduled_date !== undefined) { fields.push('scheduled_date'); values.push(scheduled_date); }
     if (checks !== undefined) {
       // checks는 { "항목명": "답변" } 형태의 부분 업데이트 — 기존 값과 병합
       fields.push('checks');
@@ -102,10 +103,26 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: '후보를 찾을 수 없습니다.' });
 
-    // 이 후보를 예약 확정하는 순간, 후보의 예식 시간을 커플의 확정 예식 시간으로 반영
-    // (본식 당일 큐시트 등에서 쓰는 시간 기준을 후보 비교 단계에서부터 이어받기 위함)
-    if (is_booked === true && result.rows[0].ceremony_time) {
-      await query('UPDATE couples SET wedding_time = $1 WHERE id = $2', [result.rows[0].ceremony_time, couple.id]);
+    // 이 후보를 예약 확정하는 순간, 후보에 입력해둔 예정일·예식 시간을 커플의 확정 결혼식 날짜/시간으로 반영
+    // (대시보드 D-day, 로드맵, 본식 당일 큐시트 등이 couple.wedding_date/wedding_time을 기준으로 동작하므로)
+    if (is_booked === true) {
+      const booked = result.rows[0];
+      const coupleFields = [];
+      const coupleValues = [];
+      if (booked.scheduled_date) {
+        coupleFields.push('wedding_date');
+        coupleValues.push(booked.scheduled_date);
+        // wedding_date를 처음 확정하는 거라면 로드맵 %계산의 기준점도 같이 고정(couples.js PATCH /me와 동일한 규칙)
+        if (!couple.roadmap_start_date) {
+          coupleFields.push('roadmap_start_date');
+          coupleValues.push(new Date().toISOString().slice(0, 10));
+        }
+      }
+      if (booked.ceremony_time) { coupleFields.push('wedding_time'); coupleValues.push(booked.ceremony_time); }
+      if (coupleFields.length > 0) {
+        const coupleSet = coupleFields.map((key, idx) => `${key} = $${idx + 1}`).join(', ');
+        await query(`UPDATE couples SET ${coupleSet} WHERE id = $${coupleValues.length + 1}`, [...coupleValues, couple.id]);
+      }
     }
 
     res.json({ venue: withTotal(result.rows[0]) });

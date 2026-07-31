@@ -3,11 +3,10 @@ import { api } from '../api/client.js';
 import { useGuideContent } from '../context/GuideContentContext.jsx';
 import { useCouple } from '../context/CoupleContext.jsx';
 import VenueCard from './venueguide/VenueCard.jsx';
-import VenueCompareCard from './venueguide/VenueCompareCard.jsx';
 import ReferenceQuoteModal from './venueguide/ReferenceQuoteModal.jsx';
 import VenueLeadTimeSection from './venueguide/VenueLeadTimeSection.jsx';
 import { StarRatingDisplay } from '../components/StarRating.jsx';
-import { won } from './venueguide/helpers.js';
+import { won, formatDateKr } from './venueguide/helpers.js';
 
 export default function VenueGuide() {
   const [venues, setVenues] = useState(null);
@@ -79,12 +78,44 @@ export default function VenueGuide() {
     });
   };
 
+  const bookedVenue = venues.find((v) => v.is_booked);
+
+  const compareRows = [
+    { label: '평점', render: (v) => (v.rating != null ? <StarRatingDisplay rating={v.rating} /> : '-') },
+    { label: '대관료', render: (v) => won(v.rental_fee) },
+    { label: '식대(1인)', render: (v) => won(v.meal_price) },
+    { label: '보증인원', render: (v) => v.guaranteed_headcount ?? '-' },
+    { label: '초과 인원 추가비용', render: (v) => won(v.extra_person_fee) },
+    { label: '필수 포함 금액', render: (v) => won(v.mandatory_fee) },
+    { label: '총금액', render: (v) => <strong style={{ color: 'var(--accent-strong)' }}>{won(v.total_price)}</strong> },
+    { label: '예정일', render: (v) => formatDateKr(v.scheduled_date) || '-' },
+    { label: '예식시간', render: (v) => v.ceremony_time?.slice(0, 5) || '-' },
+    { label: '식사 마감', render: (v) => v.meal_service_until?.slice(0, 5) || '-' },
+    { label: '근처역', render: (v) => v.nearby_station || '-' },
+    {
+      label: '참고 견적',
+      render: (v) => <button className="btn-ghost" onClick={() => setRefQuoteVenue(v)}>보기/입력</button>,
+    },
+  ];
+
   return (
     <div>
       <h1>웨딩홀</h1>
       {error && <div className="error-banner">{error}</div>}
 
-      <VenueLeadTimeSection venueLeadTimeMonths={venueLeadTimeMonths} />
+      {bookedVenue && (
+        <div className="card" style={{ borderColor: 'var(--accent)', background: 'var(--accent-bg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <span className="badge badge-success" style={{ marginRight: 8 }}>예약 확정</span>
+              <strong style={{ fontSize: '1.05rem' }}>{bookedVenue.name}</strong>
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              {[formatDateKr(bookedVenue.scheduled_date), bookedVenue.ceremony_time?.slice(0, 5)].filter(Boolean).join(' · ') || '예정일·시간 미입력'}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h2>웨딩홀 후보 추가</h2>
@@ -103,62 +134,38 @@ export default function VenueGuide() {
       </div>
 
       {venues.length > 0 && (
-        <div className="card">
-          <h2>후보 비교</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: -8, marginBottom: 10 }}>
-            후보 이름은 가로로 스크롤해도 계속 보여요.
-          </p>
-          <div className="line-items-table-wrap" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+        <details className="card">
+          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '1.05rem' }}>
+            후보 비교 <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--text-muted)' }}>({venues.length}곳 · 펼쳐서 보기)</span>
+          </summary>
+          <div style={{ overflowX: 'auto', marginTop: 14 }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: 8, position: 'sticky', left: 0, background: 'var(--bg-alt)' }}>후보</th>
-                  <th style={{ padding: 8 }}>평점</th>
-                  <th style={{ padding: 8 }}>대관료</th>
-                  <th style={{ padding: 8 }}>식대(1인)</th>
-                  <th style={{ padding: 8 }}>보증인원</th>
-                  <th style={{ padding: 8 }}>초과 인원 추가비용</th>
-                  <th style={{ padding: 8 }}>필수 포함 금액</th>
-                  <th style={{ padding: 8 }}>총금액</th>
-                  <th style={{ padding: 8 }}>예식시간</th>
-                  <th style={{ padding: 8 }}>식사 마감</th>
-                  <th style={{ padding: 8 }}>근처역</th>
-                  <th style={{ padding: 8 }}>참고 견적</th>
+                  <th style={{ padding: 8, position: 'sticky', left: 0, background: 'var(--bg-alt)' }} />
+                  {venues.map((v) => (
+                    <th key={v.id} style={{ padding: 8, whiteSpace: 'nowrap' }}>
+                      {v.name}
+                      {v.is_booked && <span className="badge badge-success" style={{ marginLeft: 6 }}>확정</span>}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {venues.map((v) => (
-                  <tr key={v.id} style={{ borderTop: '1px solid var(--border)' }}>
+                {compareRows.map((row) => (
+                  <tr key={row.label} style={{ borderTop: '1px solid var(--border)' }}>
                     <td style={{ padding: 8, fontWeight: 600, position: 'sticky', left: 0, background: 'var(--bg-alt)', whiteSpace: 'nowrap' }}>
-                      {v.name}
-                      {v.is_booked && <span className="badge badge-success" style={{ marginLeft: 6 }}>확정</span>}
+                      {row.label}
                     </td>
-                    <td style={{ padding: 8 }}>{v.rating != null ? <StarRatingDisplay rating={v.rating} /> : '-'}</td>
-                    <td style={{ padding: 8 }}>{won(v.rental_fee)}</td>
-                    <td style={{ padding: 8 }}>{won(v.meal_price)}</td>
-                    <td style={{ padding: 8 }}>{v.guaranteed_headcount ?? '-'}</td>
-                    <td style={{ padding: 8 }}>{won(v.extra_person_fee)}</td>
-                    <td style={{ padding: 8 }}>{won(v.mandatory_fee)}</td>
-                    <td style={{ padding: 8, fontWeight: 600, color: 'var(--accent-strong)' }}>{won(v.total_price)}</td>
-                    <td style={{ padding: 8 }}>{v.ceremony_time?.slice(0, 5) || '-'}</td>
-                    <td style={{ padding: 8 }}>{v.meal_service_until?.slice(0, 5) || '-'}</td>
-                    <td style={{ padding: 8 }}>{v.nearby_station || '-'}</td>
-                    <td style={{ padding: 8 }}>
-                      <button className="btn-ghost" onClick={() => setRefQuoteVenue(v)}>
-                        보기/입력
-                      </button>
-                    </td>
+                    {venues.map((v) => (
+                      <td key={v.id} style={{ padding: 8, whiteSpace: 'nowrap' }}>{row.render(v)}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="line-items-cards">
-            {venues.map((v) => (
-              <VenueCompareCard key={v.id} venue={v} onOpenRefQuote={() => setRefQuoteVenue(v)} />
-            ))}
-          </div>
-        </div>
+        </details>
       )}
 
       {refQuoteVenue && (
@@ -184,6 +191,8 @@ export default function VenueGuide() {
           onDeleteCustomChecklistItem={deleteCustomChecklistItem}
         />
       ))}
+
+      <VenueLeadTimeSection venueLeadTimeMonths={venueLeadTimeMonths} />
     </div>
   );
 }
