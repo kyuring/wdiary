@@ -44,8 +44,12 @@ export default function Checklist() {
   };
 
   const remove = async (item) => {
-    await api.delete(`/checklist/${item.id}`);
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    try {
+      await api.delete(`/checklist/${item.id}`);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const addItem = async (e) => {

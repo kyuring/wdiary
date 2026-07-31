@@ -24,12 +24,16 @@ export default function CommunityPost() {
   }, [id]);
 
   const deletePost = async () => {
-    if (user?.role === 'admin') {
-      await api.delete(`/admin/posts/${id}`);
-    } else {
-      await api.delete(`/community/posts/${id}`);
+    try {
+      if (user?.role === 'admin') {
+        await api.delete(`/admin/posts/${id}`);
+      } else {
+        await api.delete(`/community/posts/${id}`);
+      }
+      navigate('/community');
+    } catch (err) {
+      setError(err.message);
     }
-    navigate('/community');
   };
 
   const addComment = async (e) => {
@@ -48,20 +52,25 @@ export default function CommunityPost() {
   };
 
   const deleteComment = async (commentId) => {
-    if (user?.role === 'admin') {
-      await api.delete(`/admin/comments/${commentId}`);
-    } else {
-      await api.delete(`/community/comments/${commentId}`);
+    try {
+      if (user?.role === 'admin') {
+        await api.delete(`/admin/comments/${commentId}`);
+      } else {
+        await api.delete(`/community/comments/${commentId}`);
+      }
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (err) {
+      setError(err.message);
     }
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
-  if (error) return <div className="error-banner">{error}</div>;
+  if (error && !post) return <div className="full-page-center">{error}</div>;
   if (!post || !comments) return <div className="full-page-center">불러오는 중...</div>;
 
   return (
     <div>
       <Link to="/community" className="btn-ghost">← 목록으로</Link>
+      {error && <div className="error-banner" style={{ marginTop: 12 }}>{error}</div>}
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>

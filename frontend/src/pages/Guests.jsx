@@ -31,8 +31,12 @@ export default function Guests() {
   };
 
   const deleteGuest = async (guest) => {
-    await api.delete(`/guests/${guest.id}`);
-    setGuests((prev) => prev.filter((g) => g.id !== guest.id));
+    try {
+      await api.delete(`/guests/${guest.id}`);
+      setGuests((prev) => prev.filter((g) => g.id !== guest.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const addGuest = async (e) => {

@@ -68,8 +68,12 @@ export default function GiftSection() {
     setGifts((prev) => prev.map((g) => (g.id === gift.id ? result.gift : g)));
   };
   const deleteGift = async (gift) => {
-    await api.delete(`/wedding-day/gifts/${gift.id}`);
-    setGifts((prev) => prev.filter((g) => g.id !== gift.id));
+    try {
+      await api.delete(`/wedding-day/gifts/${gift.id}`);
+      setGifts((prev) => prev.filter((g) => g.id !== gift.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   if (!gifts) {

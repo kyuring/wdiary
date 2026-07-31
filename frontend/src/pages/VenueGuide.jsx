@@ -47,8 +47,12 @@ export default function VenueGuide() {
   };
 
   const deleteVenue = async (venue) => {
-    await api.delete(`/venues/${venue.id}`);
-    setVenues((prev) => prev.filter((v) => v.id !== venue.id));
+    try {
+      await api.delete(`/venues/${venue.id}`);
+      setVenues((prev) => prev.filter((v) => v.id !== venue.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   if (error && !venues) return <div className="full-page-center">{error}</div>;

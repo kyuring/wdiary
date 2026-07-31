@@ -84,8 +84,12 @@ export default function Budget() {
   };
 
   const deleteLineItem = async (item) => {
-    await api.delete(`/budget/line-items/${item.id}`);
-    await load();
+    try {
+      await api.delete(`/budget/line-items/${item.id}`);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   if (error && !data) return <div className="full-page-center">{error}</div>;

@@ -45,15 +45,18 @@ export default function AdminAnnouncements() {
   };
 
   const remove = async (item) => {
-    await api.delete(`/announcements/${item.id}`);
-    load();
+    try {
+      await api.delete(`/announcements/${item.id}`);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
   };
-
-  if (error) return <div className="card"><div className="error-banner">{error}</div></div>;
 
   return (
     <div>
       <h1>공지사항</h1>
+      {error && <div className="error-banner">{error}</div>}
       <div className="card">
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 12 }}>
           "배너"는 대시보드 상단에 카드로, "팝업"은 대시보드 진입 시 모달로 떠요. 적용기간을 넣으면 그 기간에만 자동으로 노출되고,

@@ -79,8 +79,12 @@ export function useTimeline() {
     setItems((prev) => prev.map((i) => (i.id === item.id ? result.item : i)).sort((a, b) => (a.time || '').localeCompare(b.time || '')));
   };
   const remove = async (item) => {
-    await api.delete(`/wedding-day/timeline/${item.id}`);
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    try {
+      await api.delete(`/wedding-day/timeline/${item.id}`);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
   const add = async (newItem) => {
     const result = await api.post('/wedding-day/timeline', {

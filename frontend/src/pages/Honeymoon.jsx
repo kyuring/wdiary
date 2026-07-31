@@ -50,8 +50,12 @@ export default function Honeymoon() {
     setFlights((prev) => prev.map((f) => (f.id === flight.id ? result.flight : f)));
   };
   const deleteFlight = async (flight) => {
-    await api.delete(`/honeymoon/flights/${flight.id}`);
-    setFlights((prev) => prev.filter((f) => f.id !== flight.id));
+    try {
+      await api.delete(`/honeymoon/flights/${flight.id}`);
+      setFlights((prev) => prev.filter((f) => f.id !== flight.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const addStay = async (fields) => {
@@ -63,8 +67,12 @@ export default function Honeymoon() {
     setStays((prev) => prev.map((s) => (s.id === stay.id ? result.stay : s)));
   };
   const deleteStay = async (stay) => {
-    await api.delete(`/honeymoon/stays/${stay.id}`);
-    setStays((prev) => prev.filter((s) => s.id !== stay.id));
+    try {
+      await api.delete(`/honeymoon/stays/${stay.id}`);
+      setStays((prev) => prev.filter((s) => s.id !== stay.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const applyCalculatorResult = async ({ legs, stays: newStays }) => {

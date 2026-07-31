@@ -15,8 +15,12 @@ export default function AdminReports() {
   };
 
   const remove = async (item) => {
-    await api.delete(`/admin/${item.target_type === 'post' ? 'posts' : 'comments'}/${item.target_id}`);
-    load();
+    try {
+      await api.delete(`/admin/${item.target_type === 'post' ? 'posts' : 'comments'}/${item.target_id}`);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (

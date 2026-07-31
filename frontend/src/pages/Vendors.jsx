@@ -133,8 +133,12 @@ export default function Vendors() {
   };
 
   const deleteVendor = async (vendor) => {
-    await api.delete(`/vendors/${vendor.id}`);
-    setVendors((prev) => prev.filter((v) => v.id !== vendor.id));
+    try {
+      await api.delete(`/vendors/${vendor.id}`);
+      setVendors((prev) => prev.filter((v) => v.id !== vendor.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   if (error && !vendors) return <div className="full-page-center">{error}</div>;
