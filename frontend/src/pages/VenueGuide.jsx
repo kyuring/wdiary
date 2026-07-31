@@ -139,12 +139,16 @@ export default function VenueGuide() {
             후보 비교 <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--text-muted)' }}>({venues.length}곳 · 펼쳐서 보기)</span>
           </summary>
           <div style={{ overflowX: 'auto', marginTop: 14 }}>
-            <table style={{ borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <table style={{ width: '100%', minWidth: 120 + venues.length * 140, tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <colgroup>
+                <col style={{ width: 120 }} />
+                {venues.map((v) => <col key={v.id} />)}
+              </colgroup>
               <thead>
-                <tr style={{ textAlign: 'left', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: 8, position: 'sticky', left: 0, background: 'var(--bg-alt)' }} />
+                <tr style={{ color: 'var(--text-muted)' }}>
+                  <th style={{ padding: 10, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-alt)' }} />
                   {venues.map((v) => (
-                    <th key={v.id} style={{ padding: 8, whiteSpace: 'nowrap' }}>
+                    <th key={v.id} style={{ padding: 10, textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
                       {v.name}
                       {v.is_booked && <span className="badge badge-success" style={{ marginLeft: 6 }}>확정</span>}
                     </th>
@@ -154,11 +158,13 @@ export default function VenueGuide() {
               <tbody>
                 {compareRows.map((row) => (
                   <tr key={row.label} style={{ borderTop: '1px solid var(--border)' }}>
-                    <td style={{ padding: 8, fontWeight: 600, position: 'sticky', left: 0, background: 'var(--bg-alt)', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: 10, fontWeight: 600, position: 'sticky', left: 0, background: 'var(--bg-alt)' }}>
                       {row.label}
                     </td>
                     {venues.map((v) => (
-                      <td key={v.id} style={{ padding: 8, whiteSpace: 'nowrap' }}>{row.render(v)}</td>
+                      <td key={v.id} style={{ padding: 10, textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
+                        {row.render(v)}
+                      </td>
                     ))}
                   </tr>
                 ))}
