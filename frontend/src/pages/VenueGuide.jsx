@@ -93,7 +93,7 @@ export default function VenueGuide() {
     { label: '식사 마감', render: (v) => v.meal_service_until?.slice(0, 5) || '-' },
     { label: '근처역', render: (v) => v.nearby_station || '-' },
     {
-      label: '참고 견적',
+      label: '견적',
       render: (v) => <button className="btn-ghost" onClick={() => setRefQuoteVenue(v)}>보기/입력</button>,
     },
   ];

@@ -128,7 +128,7 @@ export default function VenueCard({
           <button className="btn-secondary" onClick={() => onUpdate(venue, { is_booked: true })}>이 후보로 예약 확정</button>
         )}
         <button className="btn-ghost" onClick={onOpenRefQuote}>
-          참고 견적 보기/입력
+          견적 보기/입력
         </button>
       </div>
 

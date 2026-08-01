@@ -140,13 +140,16 @@ export default function ReferenceQuoteModal({ venue, onClose }) {
   };
 
   return (
-    <Modal title={`참고 견적 — ${venue.name}`} onClose={onClose} maxWidth="700px">
+    <Modal title={`견적 — ${venue.name}`} onClose={onClose} maxWidth="700px">
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: -8, marginBottom: 12 }}>
+        같은 웨딩홀이라도 홀·날짜·시간대별로 견적이 다르면 각각 따로 등록해서 비교하세요. 직접 받은 견적이든, 지인에게 들은 참고 견적이든 상관없어요.
+      </p>
       {error && <div className="error-banner">{error}</div>}
 
       {quotes === null ? (
         <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
       ) : quotes.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>아직 등록한 참고 견적이 없어요.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>아직 등록한 견적이 없어요.</p>
       ) : (
         <ul style={{ listStyle: 'none', margin: '0 0 12px', padding: 0 }}>
           {quotes.map((q) => (
@@ -187,7 +190,7 @@ export default function ReferenceQuoteModal({ venue, onClose }) {
 
       {editingId === null && (
         <>
-          <h3 style={{ fontSize: '0.9rem', marginBottom: 8 }}>+ 새 참고 견적 추가</h3>
+          <h3 style={{ fontSize: '0.9rem', marginBottom: 8 }}>+ 새 견적 추가</h3>
           <QuoteForm
             key={quotes?.length ?? 0}
             initial={BLANK_FORM}
