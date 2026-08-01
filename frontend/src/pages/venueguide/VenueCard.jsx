@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import MoneyInput from '../../components/MoneyInput.jsx';
-import { StarRatingInput, StarRatingDisplay } from '../../components/StarRating.jsx';
-import { won } from './helpers.js';
+import { StarRatingInput } from '../../components/StarRating.jsx';
+import VenueOptionRow from './VenueOptionRow.jsx';
 
 function CheckField({ label, value, onSave, onRemove, removeTitle }) {
   const [text, setText] = useState(value || '');
@@ -82,53 +81,68 @@ export default function VenueCard({
   onRestoreChecklistItem,
   onAddCustomChecklistItem,
   onDeleteCustomChecklistItem,
+  onAddOption,
+  onUpdateOption,
+  onDeleteOption,
+  onConfirmOption,
+  onUnconfirmOption,
 }) {
   const [name, setName] = useState(venue.name);
   const [notes, setNotes] = useState(venue.notes || '');
-  const [quotedPrice, setQuotedPrice] = useState(venue.quoted_price ?? '');
-  const [rentalFee, setRentalFee] = useState(venue.rental_fee ?? '');
-  const [mealPrice, setMealPrice] = useState(venue.meal_price ?? '');
-  const [headcount, setHeadcount] = useState(venue.guaranteed_headcount ?? '');
-  const [extraFee, setExtraFee] = useState(venue.extra_person_fee ?? '');
-  const [mandatoryFee, setMandatoryFee] = useState(venue.mandatory_fee ?? '');
   const [station, setStation] = useState(venue.nearby_station || '');
-  const [ceremonyTime, setCeremonyTime] = useState(venue.ceremony_time?.slice(0, 5) || '');
-  const [mealUntil, setMealUntil] = useState(venue.meal_service_until?.slice(0, 5) || '');
-  const [scheduledDate, setScheduledDate] = useState(venue.scheduled_date || '');
+  const [addingOption, setAddingOption] = useState(false);
+  const [confirmingOptionId, setConfirmingOptionId] = useState(null);
 
   useEffect(() => setName(venue.name), [venue.name]);
   useEffect(() => setNotes(venue.notes || ''), [venue.notes]);
-  useEffect(() => setQuotedPrice(venue.quoted_price ?? ''), [venue.quoted_price]);
-  useEffect(() => setRentalFee(venue.rental_fee ?? ''), [venue.rental_fee]);
-  useEffect(() => setMealPrice(venue.meal_price ?? ''), [venue.meal_price]);
-  useEffect(() => setHeadcount(venue.guaranteed_headcount ?? ''), [venue.guaranteed_headcount]);
-  useEffect(() => setExtraFee(venue.extra_person_fee ?? ''), [venue.extra_person_fee]);
-  useEffect(() => setMandatoryFee(venue.mandatory_fee ?? ''), [venue.mandatory_fee]);
   useEffect(() => setStation(venue.nearby_station || ''), [venue.nearby_station]);
-  useEffect(() => setCeremonyTime(venue.ceremony_time?.slice(0, 5) || ''), [venue.ceremony_time]);
-  useEffect(() => setMealUntil(venue.meal_service_until?.slice(0, 5) || ''), [venue.meal_service_until]);
-  useEffect(() => setScheduledDate(venue.scheduled_date || ''), [venue.scheduled_date]);
 
   const saveCheck = (key, val) => onUpdate(venue, { checks: { [key]: val } });
-  const commitNumber = (field, next, current) =>
-    Number(next || 0) !== Number(current || 0) && onUpdate(venue, { [field]: next === '' ? null : Number(next) });
+
+  const addOption = async () => {
+    setAddingOption(true);
+    try {
+      await onAddOption(venue);
+    } finally {
+      setAddingOption(false);
+    }
+  };
+
+  const confirmOption = async (option) => {
+    setConfirmingOptionId(option.id);
+    try {
+      await onConfirmOption(venue, option);
+    } finally {
+      setConfirmingOptionId(null);
+    }
+  };
+
+  const unconfirmOption = async (option) => {
+    setConfirmingOptionId(option.id);
+    try {
+      await onUnconfirmOption(venue, option);
+    } finally {
+      setConfirmingOptionId(null);
+    }
+  };
+
+  const options = venue.options || [];
+  const cheapestTotal = options
+    .map((o) => o.total_price ?? o.quoted_price)
+    .filter((v) => v != null)
+    .reduce((min, v) => (min == null || v < min ? v : min), null);
 
   return (
     <details className="card">
       <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
-        {venue.name} {venue.quoted_price != null && <span style={{ color: 'var(--accent-strong)' }}>· {won(venue.quoted_price)}</span>}
-        {venue.rating != null && <span style={{ marginLeft: 8, fontWeight: 400, fontSize: '0.9rem' }}><StarRatingDisplay rating={venue.rating} /></span>}
+        {venue.name} {cheapestTotal != null && <span style={{ color: 'var(--accent-strong)' }}>· {Number(cheapestTotal).toLocaleString()}원~</span>}
+        {venue.rating != null && <span style={{ marginLeft: 8, fontWeight: 400, fontSize: '0.9rem' }}>★ {venue.rating}</span>}
         {venue.is_booked && <span className="badge badge-success" style={{ marginLeft: 8 }}>✓ 예약 확정</span>}
       </summary>
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {venue.is_booked ? (
-          <button className="btn-ghost" onClick={() => onUpdate(venue, { is_booked: false })}>예약 확정 취소</button>
-        ) : (
-          <button className="btn-secondary" onClick={() => onUpdate(venue, { is_booked: true })}>이 후보로 예약 확정</button>
-        )}
         <button className="btn-ghost" onClick={onOpenRefQuote}>
-          견적 보기/입력
+          지인 참고 견적 보기/입력
         </button>
       </div>
 
@@ -143,12 +157,8 @@ export default function VenueCard({
           <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name !== venue.name && onUpdate(venue, { name })} />
         </div>
         <div className="field">
-          <label>받은 견적(총액)</label>
-          <MoneyInput
-            value={quotedPrice}
-            onChange={setQuotedPrice}
-            onBlurCommit={() => Number(quotedPrice || 0) !== Number(venue.quoted_price || 0) && onUpdate(venue, { quoted_price: quotedPrice === '' ? null : Number(quotedPrice) })}
-          />
+          <label>근처 지하철역</label>
+          <input value={station} onChange={(e) => setStation(e.target.value)} onBlur={() => station !== (venue.nearby_station || '') && onUpdate(venue, { nearby_station: station || null })} />
         </div>
       </div>
 
@@ -157,79 +167,26 @@ export default function VenueCard({
         <input value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => notes !== (venue.notes || '') && onUpdate(venue, { notes })} />
       </div>
 
-      <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: '0.95rem' }}>비교 정보 (총금액 계산용)</h3>
-      <div className="form-row">
-        <div className="field">
-          <label>대관료</label>
-          <MoneyInput value={rentalFee} onChange={setRentalFee} onBlurCommit={() => commitNumber('rental_fee', rentalFee, venue.rental_fee)} />
-        </div>
-        <div className="field">
-          <label>식대(1인 기준)</label>
-          <MoneyInput value={mealPrice} onChange={setMealPrice} onBlurCommit={() => commitNumber('meal_price', mealPrice, venue.meal_price)} />
-        </div>
-        <div className="field">
-          <label>보증 인원</label>
-          <input
-            type="number" min="0" value={headcount}
-            onChange={(e) => setHeadcount(e.target.value)}
-            onBlur={() => commitNumber('guaranteed_headcount', headcount, venue.guaranteed_headcount)}
-          />
-        </div>
-      </div>
-      <div className="form-row">
-        <div className="field">
-          <label>보증 인원 초과 시 1인당 추가비용</label>
-          <MoneyInput value={extraFee} onChange={setExtraFee} onBlurCommit={() => commitNumber('extra_person_fee', extraFee, venue.extra_person_fee)} />
-        </div>
-        <div className="field">
-          <label>필수 포함 금액</label>
-          <MoneyInput value={mandatoryFee} onChange={setMandatoryFee} onBlurCommit={() => commitNumber('mandatory_fee', mandatoryFee, venue.mandatory_fee)} />
-        </div>
-        <div className="field">
-          <label>근처 지하철역</label>
-          <input value={station} onChange={(e) => setStation(e.target.value)} onBlur={() => station !== (venue.nearby_station || '') && onUpdate(venue, { nearby_station: station || null })} />
-        </div>
-      </div>
-      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
-        필수 포함 금액: 원판·앨범·서비스료 등 계약상 반드시 함께 지불해야 하는 항목의 합계
+      <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: '0.95rem' }}>옵션(시간대·날짜별 견적)</h3>
+      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 10px' }}>
+        같은 웨딩홀이라도 시간대·날짜별로 가격이 다르면 옵션을 여러 개 추가해서 비교하세요. 그중 하나를 예약 확정하면 예정일·예식 시간이 결혼식 날짜·시간으로 자동 반영돼요.
       </p>
-      {venue.total_price != null && (
-        <p style={{ fontSize: '0.9rem', margin: '0 0 8px' }}>
-          총금액 = 대관료 + 식대 × 보증인원 + 필수 포함 금액 = <strong style={{ color: 'var(--accent-strong)' }}>{won(venue.total_price)}</strong> (자동 계산됨)
-        </p>
-      )}
+      {options.map((option) => (
+        <VenueOptionRow
+          key={option.id}
+          option={option}
+          onUpdate={(fields) => onUpdateOption(venue, option, fields)}
+          onDelete={() => onDeleteOption(venue, option)}
+          onConfirm={() => confirmOption(option)}
+          onUnconfirm={() => unconfirmOption(option)}
+          confirming={confirmingOptionId === option.id}
+        />
+      ))}
+      <button className="btn-secondary" onClick={addOption} disabled={addingOption}>
+        {addingOption ? '추가 중...' : '+ 옵션 추가'}
+      </button>
 
-      <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: '0.95rem' }}>시간 정보</h3>
-      <div className="form-row">
-        <div className="field">
-          <label>예정일(희망 예식 날짜)</label>
-          <input
-            type="date" value={scheduledDate}
-            onChange={(e) => setScheduledDate(e.target.value)}
-            onBlur={() => scheduledDate !== (venue.scheduled_date || '') && onUpdate(venue, { scheduled_date: scheduledDate || null })}
-          />
-        </div>
-        <div className="field">
-          <label>예식 시작 시간</label>
-          <input
-            type="time" value={ceremonyTime}
-            onChange={(e) => setCeremonyTime(e.target.value)}
-            onBlur={() => ceremonyTime !== (venue.ceremony_time?.slice(0, 5) || '') && onUpdate(venue, { ceremony_time: ceremonyTime || null })}
-          />
-        </div>
-        <div className="field">
-          <label>식사 가능 시간(까지)</label>
-          <input
-            type="time" value={mealUntil}
-            onChange={(e) => setMealUntil(e.target.value)}
-            onBlur={() => mealUntil !== (venue.meal_service_until?.slice(0, 5) || '') && onUpdate(venue, { meal_service_until: mealUntil || null })}
-          />
-        </div>
-      </div>
-      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
-        이 후보로 예약 확정하면 여기 입력한 예정일·예식 시작 시간이 결혼식 날짜·시간으로 자동 반영돼요.
-      </p>
-
+      <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: '0.95rem' }}>체크리스트</h3>
       {Object.entries(checklist || {}).map(([category, items]) => {
         const customItems = customChecklistItems?.[category] || [];
         const visibleItems = items.filter((item) => !hiddenChecklistItems?.has(item));

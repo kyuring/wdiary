@@ -55,6 +55,58 @@ export default function VenueGuide() {
     }
   };
 
+  const addOption = async (venue) => {
+    try {
+      const result = await api.post(`/venues/${venue.id}/options`, {});
+      setVenues((prev) => prev.map((v) => (v.id === venue.id ? { ...v, options: [...v.options, result.option] } : v)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const updateOption = async (venue, option, fields) => {
+    try {
+      const result = await api.patch(`/venues/${venue.id}/options/${option.id}`, fields);
+      setVenues((prev) => prev.map((v) => (v.id === venue.id
+        ? { ...v, options: v.options.map((o) => (o.id === option.id ? result.option : o)) }
+        : v)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const deleteOption = async (venue, option) => {
+    try {
+      await api.delete(`/venues/${venue.id}/options/${option.id}`);
+      setVenues((prev) => prev.map((v) => (v.id === venue.id
+        ? { ...v, options: v.options.filter((o) => o.id !== option.id), is_booked: option.is_selected ? false : v.is_booked }
+        : v)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const confirmOption = async (venue, option) => {
+    try {
+      const result = await api.post(`/venues/${venue.id}/options/${option.id}/confirm`);
+      // 커플 전체에서 예약 확정은 하나만 존재하므로, 다른 웨딩홀의 확정 표시도 서버에서 같이 해제됨 — 로컬 상태도 맞춰줌
+      setVenues((prev) => prev.map((v) => (v.id === venue.id
+        ? result.venue
+        : { ...v, is_booked: false, options: v.options.map((o) => ({ ...o, is_selected: false })) })));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const unconfirmOption = async (venue, option) => {
+    try {
+      const result = await api.post(`/venues/${venue.id}/options/${option.id}/unconfirm`);
+      setVenues((prev) => prev.map((v) => (v.id === venue.id ? result.venue : v)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (error && !venues) return <div className="full-page-center">{error}</div>;
   if (!venues) return <div className="full-page-center">불러오는 중...</div>;
 
@@ -79,22 +131,35 @@ export default function VenueGuide() {
   };
 
   const bookedVenue = venues.find((v) => v.is_booked);
+  const bookedOption = bookedVenue?.options.find((o) => o.is_selected);
+
+  // 비교표는 후보가 아니라 "후보 + 옵션" 조합이 한 열 — 같은 웨딩홀이라도 시간대별 옵션마다 따로 비교됨.
+  // 옵션이 아직 없는 후보도 빈 열로는 보이게 함.
+  const compareColumns = venues.flatMap((v) => (
+    v.options.length > 0 ? v.options.map((o) => ({ venue: v, option: o })) : [{ venue: v, option: null }]
+  ));
 
   const compareRows = [
-    { label: '평점', render: (v) => (v.rating != null ? <StarRatingDisplay rating={v.rating} /> : '-') },
-    { label: '대관료', render: (v) => won(v.rental_fee) },
-    { label: '식대(1인)', render: (v) => won(v.meal_price) },
-    { label: '보증인원', render: (v) => v.guaranteed_headcount ?? '-' },
-    { label: '초과 인원 추가비용', render: (v) => won(v.extra_person_fee) },
-    { label: '필수 포함 금액', render: (v) => won(v.mandatory_fee) },
-    { label: '총금액', render: (v) => <strong style={{ color: 'var(--accent-strong)' }}>{won(v.total_price)}</strong> },
-    { label: '예정일', render: (v) => formatDateKr(v.scheduled_date) || '-' },
-    { label: '예식시간', render: (v) => v.ceremony_time?.slice(0, 5) || '-' },
-    { label: '식사 마감', render: (v) => v.meal_service_until?.slice(0, 5) || '-' },
-    { label: '근처역', render: (v) => v.nearby_station || '-' },
+    { label: '평점', render: ({ venue }) => (venue.rating != null ? <StarRatingDisplay rating={venue.rating} /> : '-') },
+    { label: '대관료', render: ({ option }) => won(option?.rental_fee) },
+    { label: '식대(1인)', render: ({ option }) => won(option?.meal_price) },
+    { label: '보증인원', render: ({ option }) => option?.guaranteed_headcount ?? '-' },
+    { label: '초과 인원 추가비용', render: ({ option }) => won(option?.extra_person_fee) },
+    { label: '필수 포함 금액', render: ({ option }) => won(option?.mandatory_fee) },
     {
-      label: '견적',
-      render: (v) => <button className="btn-ghost" onClick={() => setRefQuoteVenue(v)}>보기/입력</button>,
+      label: '총금액',
+      render: ({ option }) => {
+        const total = option?.total_price ?? option?.quoted_price;
+        return total != null ? <strong style={{ color: 'var(--accent-strong)' }}>{won(total)}</strong> : '-';
+      },
+    },
+    { label: '예정일', render: ({ option }) => (option && formatDateKr(option.scheduled_date)) || '-' },
+    { label: '예식시간', render: ({ option }) => option?.ceremony_time?.slice(0, 5) || '-' },
+    { label: '식사 마감', render: ({ option }) => option?.meal_service_until?.slice(0, 5) || '-' },
+    { label: '근처역', render: ({ venue }) => venue.nearby_station || '-' },
+    {
+      label: '지인 참고 견적',
+      render: ({ venue }) => <button className="btn-ghost" onClick={() => setRefQuoteVenue(venue)}>보기/입력</button>,
     },
   ];
 
@@ -109,9 +174,10 @@ export default function VenueGuide() {
             <div>
               <span className="badge badge-success" style={{ marginRight: 8 }}>예약 확정</span>
               <strong style={{ fontSize: '1.05rem' }}>{bookedVenue.name}</strong>
+              {bookedOption?.label && <span style={{ color: 'var(--text-muted)' }}> · {bookedOption.label}</span>}
             </div>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              {[formatDateKr(bookedVenue.scheduled_date), bookedVenue.ceremony_time?.slice(0, 5)].filter(Boolean).join(' · ') || '예정일·시간 미입력'}
+              {[formatDateKr(bookedOption?.scheduled_date), bookedOption?.ceremony_time?.slice(0, 5)].filter(Boolean).join(' · ') || '예정일·시간 미입력'}
             </span>
           </div>
         </div>
@@ -136,21 +202,22 @@ export default function VenueGuide() {
       {venues.length > 0 && (
         <details className="card">
           <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '1.05rem' }}>
-            후보 비교 <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--text-muted)' }}>({venues.length}곳 · 펼쳐서 보기)</span>
+            후보 비교 <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--text-muted)' }}>({compareColumns.length}개 옵션 · 펼쳐서 보기)</span>
           </summary>
           <div style={{ overflowX: 'auto', marginTop: 14 }}>
-            <table style={{ width: '100%', minWidth: 120 + venues.length * 140, tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <table style={{ width: '100%', minWidth: 120 + compareColumns.length * 140, tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <colgroup>
                 <col style={{ width: 120 }} />
-                {venues.map((v) => <col key={v.id} />)}
+                {compareColumns.map((c) => <col key={`${c.venue.id}-${c.option?.id ?? 'none'}`} />)}
               </colgroup>
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
                   <th style={{ padding: 10, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-alt)' }} />
-                  {venues.map((v) => (
-                    <th key={v.id} style={{ padding: 10, textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
-                      {v.name}
-                      {v.is_booked && <span className="badge badge-success" style={{ marginLeft: 6 }}>확정</span>}
+                  {compareColumns.map(({ venue, option }) => (
+                    <th key={`${venue.id}-${option?.id ?? 'none'}`} style={{ padding: 10, textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
+                      {venue.name}
+                      {option?.label && <span style={{ fontWeight: 400 }}> · {option.label}</span>}
+                      {option?.is_selected && <span className="badge badge-success" style={{ marginLeft: 6 }}>확정</span>}
                     </th>
                   ))}
                 </tr>
@@ -161,9 +228,9 @@ export default function VenueGuide() {
                     <td style={{ padding: 10, fontWeight: 600, position: 'sticky', left: 0, background: 'var(--bg-alt)' }}>
                       {row.label}
                     </td>
-                    {venues.map((v) => (
-                      <td key={v.id} style={{ padding: 10, textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
-                        {row.render(v)}
+                    {compareColumns.map((c) => (
+                      <td key={`${c.venue.id}-${c.option?.id ?? 'none'}`} style={{ padding: 10, textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
+                        {row.render(c)}
                       </td>
                     ))}
                   </tr>
@@ -195,6 +262,11 @@ export default function VenueGuide() {
           onRestoreChecklistItem={restoreChecklistItem}
           onAddCustomChecklistItem={addCustomChecklistItem}
           onDeleteCustomChecklistItem={deleteCustomChecklistItem}
+          onAddOption={addOption}
+          onUpdateOption={updateOption}
+          onDeleteOption={deleteOption}
+          onConfirmOption={confirmOption}
+          onUnconfirmOption={unconfirmOption}
         />
       ))}
 
