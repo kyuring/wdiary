@@ -520,16 +520,13 @@ select:focus {
 
 /* 준비 타임라인 카드 그리드 — 폭에 상관없이 카드 크기가 들쭉날쭉해지지 않도록 auto-fill 대신
    고정 열 개수로 줄바꿈함(좁을 땐 2열, 넓을 땐 4열) */
+/* 뷰포트 기준 2열/4열 breakpoint였으나, 데스크톱은 사이드바(240px)가 실제 사용 가능한 폭을 줄여서
+   뷰포트만 보고 4열로 강제하면 카드가 비좁게 눌리는 문제가 있었음. 실제 컨테이너 폭에 맞춰 열 수가
+   자동으로 정해지는 auto-fill로 교체 — 창을 줄이면 컨테이너 폭을 따라 자연스럽게 아래로 줄바꿈됨. */
 .roadmap-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;
-}
-
-@media (min-width: 640px) {
-  .roadmap-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .dashboard-grid > .card {
