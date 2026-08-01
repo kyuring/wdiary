@@ -5,12 +5,14 @@ import Modal from '../../components/Modal.jsx';
 import { DAY_TYPE_LABELS } from '../../lib/roadmap.js';
 import { won } from './helpers.js';
 
+const SOURCE_LABELS = { mine: '내가 받은 견적', reference: '지인 참고 견적' };
+
 const QUOTE_FIELDS = [
-  'hall_name', 'quote_date', 'day_type', 'time_slot', 'rental_fee', 'meal_price',
+  'source', 'hall_name', 'quote_date', 'day_type', 'time_slot', 'rental_fee', 'meal_price',
   'guaranteed_headcount', 'drinks_included', 'contract_day_benefit', 'total_price',
 ];
 
-const BLANK_FORM = Object.fromEntries(QUOTE_FIELDS.map((f) => [f, '']));
+const BLANK_FORM = { ...Object.fromEntries(QUOTE_FIELDS.map((f) => [f, ''])), source: 'mine' };
 
 function QuoteForm({ initial, onSubmit, secondaryLabel, onSecondary, submitting }) {
   const [form, setForm] = useState(initial);
@@ -19,6 +21,7 @@ function QuoteForm({ initial, onSubmit, secondaryLabel, onSecondary, submitting 
   const submit = (e) => {
     e.preventDefault();
     onSubmit({
+      source: form.source || 'mine',
       hall_name: form.hall_name || null,
       quote_date: form.quote_date || null,
       day_type: form.day_type || null,
@@ -34,6 +37,14 @@ function QuoteForm({ initial, onSubmit, secondaryLabel, onSecondary, submitting 
 
   return (
     <form onSubmit={submit}>
+      <div className="field">
+        <label>이 견적은</label>
+        <select value={form.source || 'mine'} onChange={(e) => set('source')(e.target.value)}>
+          {Object.entries(SOURCE_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+      </div>
       <div className="form-row">
         <div className="field">
           <label>홀명</label>
@@ -93,6 +104,57 @@ function QuoteForm({ initial, onSubmit, secondaryLabel, onSecondary, submitting 
   );
 }
 
+function QuoteItem({ quote: q, venue, editingId, setEditingId, updateQuote, deleteQuote, submitting }) {
+  return (
+    <li style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+          {q.hall_name || venue.name}
+          {q.quote_date && <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {q.quote_date}{q.day_type && ` (${DAY_TYPE_LABELS[q.day_type]})`}{q.time_slot && ` ${q.time_slot}`}</span>}
+        </span>
+        <span style={{ display: 'flex', gap: 6 }}>
+          <button className="btn-ghost" style={{ fontSize: '0.78rem', padding: '2px 6px' }} onClick={() => setEditingId(q.id)}>수정</button>
+          <button className="btn-ghost" style={{ fontSize: '0.78rem', padding: '2px 6px' }} onClick={() => deleteQuote(q.id)}>삭제</button>
+        </span>
+      </div>
+      <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+        대관료 {won(q.rental_fee)} · 식대 {won(q.meal_price)} · 보증인원 {q.guaranteed_headcount ?? '-'}명
+        {q.drinks_included && ` · ${q.drinks_included}`}
+        {q.contract_day_benefit && ` · ${q.contract_day_benefit}`}
+      </p>
+      {q.total_price != null && (
+        <p style={{ margin: '2px 0 0', fontSize: '0.88rem', fontWeight: 600, color: 'var(--accent-strong)' }}>총금액 {won(q.total_price)}</p>
+      )}
+      {editingId === q.id && (
+        <div style={{ marginTop: 10 }}>
+          <QuoteForm
+            initial={Object.fromEntries(QUOTE_FIELDS.map((f) => [f, q[f] ?? '']))}
+            onSubmit={(payload) => updateQuote(q.id, payload)}
+            secondaryLabel="취소"
+            onSecondary={() => setEditingId(null)}
+            submitting={submitting}
+          />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function QuoteGroup({ title, quotes, ...itemProps }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <h3 style={{ fontSize: '0.88rem', marginBottom: 4, color: 'var(--text-muted)' }}>{title}</h3>
+      {quotes.length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>아직 없어요.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {quotes.map((q) => <QuoteItem key={q.id} quote={q} {...itemProps} />)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function ReferenceQuoteModal({ venue, onClose }) {
   const [quotes, setQuotes] = useState(null);
   const [error, setError] = useState('');
@@ -139,53 +201,22 @@ export default function ReferenceQuoteModal({ venue, onClose }) {
     }
   };
 
+  const itemProps = { venue, editingId, setEditingId, updateQuote, deleteQuote, submitting };
+
   return (
     <Modal title={`견적 — ${venue.name}`} onClose={onClose} maxWidth="700px">
       <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: -8, marginBottom: 12 }}>
-        같은 웨딩홀이라도 홀·날짜·시간대별로 견적이 다르면 각각 따로 등록해서 비교하세요. 직접 받은 견적이든, 지인에게 들은 참고 견적이든 상관없어요.
+        같은 웨딩홀이라도 홀·날짜·시간대별로 견적이 다르면 각각 따로 등록해서 비교하세요.
       </p>
       {error && <div className="error-banner">{error}</div>}
 
       {quotes === null ? (
         <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
-      ) : quotes.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>아직 등록한 견적이 없어요.</p>
       ) : (
-        <ul style={{ listStyle: 'none', margin: '0 0 12px', padding: 0 }}>
-          {quotes.map((q) => (
-            <li key={q.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                  {q.hall_name || venue.name}
-                  {q.quote_date && <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {q.quote_date}{q.day_type && ` (${DAY_TYPE_LABELS[q.day_type]})`}{q.time_slot && ` ${q.time_slot}`}</span>}
-                </span>
-                <span style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn-ghost" style={{ fontSize: '0.78rem', padding: '2px 6px' }} onClick={() => setEditingId(q.id)}>수정</button>
-                  <button className="btn-ghost" style={{ fontSize: '0.78rem', padding: '2px 6px' }} onClick={() => deleteQuote(q.id)}>삭제</button>
-                </span>
-              </div>
-              <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                대관료 {won(q.rental_fee)} · 식대 {won(q.meal_price)} · 보증인원 {q.guaranteed_headcount ?? '-'}명
-                {q.drinks_included && ` · ${q.drinks_included}`}
-                {q.contract_day_benefit && ` · ${q.contract_day_benefit}`}
-              </p>
-              {q.total_price != null && (
-                <p style={{ margin: '2px 0 0', fontSize: '0.88rem', fontWeight: 600, color: 'var(--accent-strong)' }}>총금액 {won(q.total_price)}</p>
-              )}
-              {editingId === q.id && (
-                <div style={{ marginTop: 10 }}>
-                  <QuoteForm
-                    initial={Object.fromEntries(QUOTE_FIELDS.map((f) => [f, q[f] ?? '']))}
-                    onSubmit={(payload) => updateQuote(q.id, payload)}
-                    secondaryLabel="취소"
-                    onSecondary={() => setEditingId(null)}
-                    submitting={submitting}
-                  />
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+        <>
+          <QuoteGroup title="내가 받은 견적" quotes={quotes.filter((q) => q.source !== 'reference')} {...itemProps} />
+          <QuoteGroup title="지인 참고 견적" quotes={quotes.filter((q) => q.source === 'reference')} {...itemProps} />
+        </>
       )}
 
       {editingId === null && (

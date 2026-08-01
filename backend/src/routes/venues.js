@@ -158,7 +158,7 @@ async function requireOwnedVenue(req, res, coupleId) {
 }
 
 const REF_QUOTE_FIELDS = [
-  'hall_name', 'quote_date', 'day_type', 'time_slot', 'rental_fee', 'meal_price',
+  'source', 'hall_name', 'quote_date', 'day_type', 'time_slot', 'rental_fee', 'meal_price',
   'guaranteed_headcount', 'drinks_included', 'contract_day_benefit', 'total_price',
 ];
 
